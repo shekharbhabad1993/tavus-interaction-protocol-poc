@@ -20,7 +20,9 @@ const TavusPOC = () => {
   const [conversationId, setConversationId] = useState('');
   const [isMuted, setIsMuted] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
-  const [error, setError] = useState('');  const [showVideo, setShowVideo] = useState(false);
+  const [error, setError] = useState('');  
+  const [showVideo, setShowVideo] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   
   // Interaction controls state
   const [echoText, setEchoText] = useState('');
@@ -33,32 +35,28 @@ const TavusPOC = () => {
   const callRef = useRef<DailyCall | null>(null);
   const videoContainerRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-
-  // Inline styles
-  const styles = {
-    container: {
+  // Inline styles with mobile responsiveness
+  const styles = {    container: {
       maxWidth: '1400px',
       margin: '0 auto',
-      padding: '16px',
+      padding: isMobile ? '12px' : '16px',
       backgroundColor: '#ffffff',
       fontFamily: 'system-ui, -apple-system, sans-serif',
       minHeight: '100vh'
     } as React.CSSProperties,    leftColumn: {
       display: 'flex',
       flexDirection: 'column',
-      gap: '16px'
-    } as React.CSSProperties,
-    topGrid: {
+      gap: isMobile ? '12px' : '16px'
+    } as React.CSSProperties,topGrid: {
       display: 'grid',
-      gridTemplateColumns: '350px 1fr',
+      gridTemplateColumns: isMobile ? '1fr' : '350px 1fr',
       gap: '16px',
       marginBottom: '16px',
       height: 'auto'
-    } as React.CSSProperties,
-    configSection: {
+    } as React.CSSProperties,    configSection: {
       backgroundColor: '#f9fafb',
       borderRadius: '8px',
-      padding: '16px',
+      padding: isMobile ? '12px' : '16px',
       height: 'fit-content'
     } as React.CSSProperties,
     configTitle: {
@@ -68,11 +66,10 @@ const TavusPOC = () => {
       display: 'flex',
       alignItems: 'center',
       gap: '6px'
-    } as React.CSSProperties,
-    inputGrid: {
+    } as React.CSSProperties,    inputGrid: {
       display: 'grid',
       gridTemplateColumns: '1fr',
-      gap: '12px',
+      gap: isMobile ? '8px' : '12px',
       marginBottom: '12px'
     } as React.CSSProperties,
     inputField: {
@@ -84,15 +81,16 @@ const TavusPOC = () => {
       fontWeight: '500',
       color: '#374151',
       marginBottom: '4px'
-    } as React.CSSProperties,
-    input: {
+    } as React.CSSProperties,    input: {
       width: '100%',
-      padding: '8px',
+      padding: isMobile ? '12px' : '8px',
       border: '1px solid #d1d5db',
       borderRadius: '4px',
-      fontSize: '12px',
+      fontSize: isMobile ? '16px' : '12px',
       outline: 'none',
-      transition: 'border-color 0.2s'
+      transition: 'border-color 0.2s',
+      minHeight: isMobile ? '44px' : 'auto',
+      boxSizing: 'border-box'
     } as React.CSSProperties,
     statusBar: {
       display: 'flex',
@@ -124,12 +122,11 @@ const TavusPOC = () => {
     statusError: {
       backgroundColor: '#fee2e2',
       color: '#991b1b'
-    } as React.CSSProperties,
-    button: {
-      padding: '8px 16px',
+    } as React.CSSProperties,    button: {
+      padding: isMobile ? '12px 16px' : '8px 16px',
       border: 'none',
       borderRadius: '4px',
-      fontSize: '12px',
+      fontSize: isMobile ? '14px' : '12px',
       fontWeight: '500',
       cursor: 'pointer',
       display: 'flex',
@@ -137,7 +134,8 @@ const TavusPOC = () => {
       justifyContent: 'center',
       gap: '6px',
       transition: 'background-color 0.2s',
-      width: '100%'
+      width: '100%',
+      minHeight: isMobile ? '44px' : 'auto'
     } as React.CSSProperties,
     buttonPrimary: {
       backgroundColor: '#3b82f6',
@@ -150,11 +148,10 @@ const TavusPOC = () => {
     buttonDisabled: {
       opacity: 0.5,
       cursor: 'not-allowed'
-    } as React.CSSProperties,
-    videoSection: {
+    } as React.CSSProperties,    videoSection: {
       backgroundColor: '#f9fafb',
       borderRadius: '8px',
-      padding: '16px',
+      padding: isMobile ? '12px' : '16px',
       display: 'flex',
       flexDirection: 'column'
     } as React.CSSProperties,
@@ -167,7 +164,7 @@ const TavusPOC = () => {
       gap: '6px'
     } as React.CSSProperties,    videoContainer: {
       width: '100%',
-      height: '500px',
+      height: isMobile ? '300px' : '500px',
       backgroundColor: '#000',
       borderRadius: '6px',
       display: 'flex',
@@ -191,14 +188,12 @@ const TavusPOC = () => {
       padding: '8px',
       borderRadius: '50%',      border: 'none',
       cursor: 'pointer'
-    } as React.CSSProperties,
-    interactionSection: {
+    } as React.CSSProperties,    interactionSection: {
       backgroundColor: '#f9fafb',
       borderRadius: '8px',
-      padding: '16px'
-    } as React.CSSProperties,
-    messagesContainer: {
-      height: '200px',
+      padding: isMobile ? '12px' : '16px'
+    } as React.CSSProperties,messagesContainer: {
+      height: isMobile ? '150px' : '200px',
       overflowY: 'auto' as const,
       marginBottom: '12px',
       padding: '8px',
@@ -262,24 +257,25 @@ const TavusPOC = () => {
     inputRow: {
       display: 'flex',
       gap: '6px'
-    } as React.CSSProperties,
-    messageInput: {
+    } as React.CSSProperties,    messageInput: {
       flex: 1,
-      padding: '8px',
+      padding: isMobile ? '12px' : '8px',
       border: '1px solid #d1d5db',
       borderRadius: '4px',
-      fontSize: '12px',
-      outline: 'none'
-    } as React.CSSProperties,
-    sendButton: {
-      padding: '8px 12px',
+      fontSize: isMobile ? '16px' : '12px',
+      outline: 'none',
+      minHeight: isMobile ? '44px' : 'auto',
+      boxSizing: 'border-box'
+    } as React.CSSProperties,    sendButton: {
+      padding: isMobile ? '12px 16px' : '8px 12px',
       backgroundColor: '#3b82f6',
       color: 'white',
       border: 'none',
       borderRadius: '4px',
       cursor: 'pointer',
       display: 'flex',
-      alignItems: 'center'
+      alignItems: 'center',
+      minHeight: isMobile ? '44px' : 'auto'
     } as React.CSSProperties,
     errorAlert: {
       marginTop: '8px',
@@ -310,38 +306,39 @@ const TavusPOC = () => {
     compactInputRow: {
       display: 'flex',
       gap: '4px'
-    } as React.CSSProperties,
-    compactInput: {
+    } as React.CSSProperties,    compactInput: {
       flex: 1,
-      padding: '6px',
+      padding: isMobile ? '10px' : '6px',
       border: '1px solid #d1d5db',
       borderRadius: '4px',
-      fontSize: '11px',
-      outline: 'none'
-    } as React.CSSProperties,
-    compactButton: {
-      padding: '6px 12px',
+      fontSize: isMobile ? '14px' : '11px',
+      outline: 'none',
+      minHeight: isMobile ? '40px' : 'auto',
+      boxSizing: 'border-box'
+    } as React.CSSProperties,    compactButton: {
+      padding: isMobile ? '10px 16px' : '6px 12px',
       backgroundColor: '#3b82f6',
       color: 'white',
       border: 'none',
       borderRadius: '4px',
       cursor: 'pointer',
-      fontSize: '11px',
-      whiteSpace: 'nowrap' as const
-    } as React.CSSProperties,
-    sensitivityGrid: {
+      fontSize: isMobile ? '14px' : '11px',
+      whiteSpace: 'nowrap' as const,
+      minHeight: isMobile ? '40px' : 'auto'
+    } as React.CSSProperties,sensitivityGrid: {
       display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
+      gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
       gap: '6px',
       marginBottom: '6px'
-    } as React.CSSProperties,
-    selectInput: {
-      padding: '6px',
+    } as React.CSSProperties,    selectInput: {
+      padding: isMobile ? '12px' : '6px',
       border: '1px solid #d1d5db',
       borderRadius: '4px',
-      fontSize: '11px',
+      fontSize: isMobile ? '16px' : '11px',
       outline: 'none',
-      cursor: 'pointer'
+      cursor: 'pointer',
+      minHeight: isMobile ? '44px' : 'auto',
+      boxSizing: 'border-box'
     } as React.CSSProperties
   };
 
@@ -349,10 +346,19 @@ const TavusPOC = () => {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
-
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Handle window resize for responsive design
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Cleanup on component unmount
   useEffect(() => {
@@ -712,14 +718,14 @@ const TavusPOC = () => {
       callRef.current.setLocalAudio(!isMuted);
     }
   };  return (
-    <div style={styles.container}>
-      {/* Main Heading */}
+    <div style={styles.container}>      {/* Main Heading */}
       <h1 style={{
-        fontSize: '1.5rem',
+        fontSize: isMobile ? '1.25rem' : '1.5rem',
         fontWeight: 'bold',
         color: '#1f2937',
-        marginBottom: '20px',
-        textAlign: 'center' as const
+        marginBottom: isMobile ? '16px' : '20px',
+        textAlign: 'center' as const,
+        padding: isMobile ? '0 8px' : '0'
       }}>
         Tavus Interaction Protocol POC
       </h1>
@@ -1039,8 +1045,8 @@ const TavusPOC = () => {
       <div style={{
         backgroundColor: '#f9fafb',
         borderRadius: '8px',
-        padding: '16px',
-        marginTop: '16px'
+        padding: isMobile ? '12px' : '16px',
+        marginTop: isMobile ? '12px' : '16px'
       }}>
         <h3 style={styles.sectionTitle}>
           <MessageSquare size={16} />
