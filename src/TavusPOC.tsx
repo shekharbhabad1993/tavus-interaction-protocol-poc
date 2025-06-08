@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, Send, Video, Mic, MicOff, Settings, AlertCircle, CheckCircle, Loader } from 'lucide-react';
+import { MessageSquare, Send, Video, Mic, MicOff, Settings, AlertCircle, CheckCircle, Loader } from 'lucide-react';
 import { DailyCall } from '@daily-co/daily-js';
 
 type ConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'error';
@@ -43,24 +43,14 @@ const TavusPOC = () => {
       backgroundColor: '#ffffff',
       fontFamily: 'system-ui, -apple-system, sans-serif',
       minHeight: '100vh'
-    } as React.CSSProperties,
-    header: {
-      marginBottom: '16px',
-      textAlign: 'center' as const
-    } as React.CSSProperties,
-    title: {
-      fontSize: '1.5rem',
-      fontWeight: 'bold',
-      color: '#1f2937',
-      marginBottom: '4px'
-    } as React.CSSProperties,
-    subtitle: {
-      color: '#6b7280',
-      fontSize: '0.875rem'
+    } as React.CSSProperties,    leftColumn: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '16px'
     } as React.CSSProperties,
     topGrid: {
       display: 'grid',
-      gridTemplateColumns: '1fr 2fr',
+      gridTemplateColumns: '350px 1fr',
       gap: '16px',
       marginBottom: '16px',
       height: 'auto'
@@ -175,10 +165,9 @@ const TavusPOC = () => {
       display: 'flex',
       alignItems: 'center',
       gap: '6px'
-    } as React.CSSProperties,
-    videoContainer: {
+    } as React.CSSProperties,    videoContainer: {
       width: '100%',
-      height: '300px',
+      height: '500px',
       backgroundColor: '#000',
       borderRadius: '6px',
       display: 'flex',
@@ -186,7 +175,8 @@ const TavusPOC = () => {
       justifyContent: 'center',
       border: '1px solid #e5e7eb',
       position: 'relative',
-      marginBottom: '12px'
+      marginBottom: '12px',
+      overflow: 'auto'
     } as React.CSSProperties,
     videoPlaceholder: {
       textAlign: 'center' as const,
@@ -199,21 +189,10 @@ const TavusPOC = () => {
     } as React.CSSProperties,
     controlButton: {
       padding: '8px',
-      borderRadius: '50%',
-      border: 'none',
+      borderRadius: '50%',      border: 'none',
       cursor: 'pointer'
     } as React.CSSProperties,
-    bottomGrid: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '16px'
-    } as React.CSSProperties,
     interactionSection: {
-      backgroundColor: '#f9fafb',
-      borderRadius: '8px',
-      padding: '16px'
-    } as React.CSSProperties,
-    chatSection: {
       backgroundColor: '#f9fafb',
       borderRadius: '8px',
       padding: '16px'
@@ -653,14 +632,13 @@ const TavusPOC = () => {
       }
     }
   };
-
   // Overwrite Context Interaction - Change conversational context
   const sendContextInteraction = () => {
     if (!contextText.trim() || !callRef.current || !isConnected) return;
 
     const interaction = {
       message_type: 'conversation',
-      event_type: 'conversation.overwrite_context',
+      event_type: 'conversation.overwrite_llm_context',
       conversation_id: conversationId,
       properties: {
         context: contextText
@@ -734,108 +712,280 @@ const TavusPOC = () => {
       callRef.current.setLocalAudio(!isMuted);
     }
   };
-
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h1 style={styles.title}>Tavus Interactions Protocol POC</h1>
-        <p style={styles.subtitle}>Test real-time interactions with Tavus digital replicas</p>
-      </div>
-
-      {/* Top Grid - Configuration and Video */}
+    <div style={styles.container}>      {/* Top Grid - Left Column (Config + Interactions) and Video */}
       <div style={styles.topGrid}>
-        {/* Configuration Section */}
-        <div style={styles.configSection}>
-          <h2 style={styles.configTitle}>
-            <Settings size={16} />
-            Configuration
-          </h2>
-          
-          <div style={styles.inputGrid}>
-            <div style={styles.inputField}>
-              <label style={styles.label}>Conversation URL</label>
-              <input
-                type="text"
-                value={conversationUrl}
-                onChange={(e) => setConversationUrl(e.target.value)}
-                placeholder="https://domain.daily.co/room-name"
-                style={{
-                  ...styles.input,
-                  ...(isConnected ? styles.buttonDisabled : {})
-                }}
-                disabled={isConnected}
-              />
-            </div>
+        {/* Left Column - Configuration and Interaction Controls */}
+        <div style={styles.leftColumn}>
+          {/* Configuration Section */}
+          <div style={styles.configSection}>
+            <h2 style={styles.configTitle}>
+              <Settings size={16} />
+              Configuration
+            </h2>
             
-            <div style={styles.inputField}>
-              <label style={styles.label}>Conversation ID</label>
-              <input
-                type="text"
-                value={conversationId}
-                onChange={(e) => setConversationId(e.target.value)}
-                placeholder="tavus-conversation-123"
-                style={{
-                  ...styles.input,
-                  ...(isConnected ? styles.buttonDisabled : {})
-                }}
-                disabled={isConnected}
-              />
+            <div style={styles.inputGrid}>
+              <div style={styles.inputField}>
+                <label style={styles.label}>Conversation URL</label>
+                <input
+                  type="text"
+                  value={conversationUrl}
+                  onChange={(e) => setConversationUrl(e.target.value)}
+                  placeholder="https://domain.daily.co/room-name"
+                  style={{
+                    ...styles.input,
+                    ...(isConnected ? styles.buttonDisabled : {})
+                  }}
+                  disabled={isConnected}
+                />
+              </div>
+              
+              <div style={styles.inputField}>
+                <label style={styles.label}>Conversation ID</label>
+                <input
+                  type="text"
+                  value={conversationId}
+                  onChange={(e) => setConversationId(e.target.value)}
+                  placeholder="tavus-conversation-123"
+                  style={{
+                    ...styles.input,
+                    ...(isConnected ? styles.buttonDisabled : {})
+                  }}
+                  disabled={isConnected}
+                />
+              </div>
             </div>
-          </div>
 
-          <div style={styles.statusBar}>
-            <div style={{
-              ...styles.statusIndicator,
-              ...(connectionStatus === 'connected' ? styles.statusConnected :
-                 connectionStatus === 'connecting' ? styles.statusConnecting :
-                 connectionStatus === 'error' ? styles.statusError :
-                 styles.statusDisconnected)
-            }}>
-              {connectionStatus === 'connected' && <CheckCircle size={12} />}
-              {connectionStatus === 'connecting' && <Loader size={12} />}
-              {connectionStatus === 'error' && <AlertCircle size={12} />}
-              {connectionStatus.charAt(0).toUpperCase() + connectionStatus.slice(1)}
+            <div style={styles.statusBar}>
+              <div style={{
+                ...styles.statusIndicator,
+                ...(connectionStatus === 'connected' ? styles.statusConnected :
+                   connectionStatus === 'connecting' ? styles.statusConnecting :
+                   connectionStatus === 'error' ? styles.statusError :
+                   styles.statusDisconnected)
+              }}>
+                {connectionStatus === 'connected' && <CheckCircle size={12} />}
+                {connectionStatus === 'connecting' && <Loader size={12} />}
+                {connectionStatus === 'error' && <AlertCircle size={12} />}
+                {connectionStatus.charAt(0).toUpperCase() + connectionStatus.slice(1)}
+              </div>
+              
+              {!isConnected ? (
+                <button
+                  onClick={initializeCall}
+                  disabled={isLoading || !conversationUrl || !conversationId}
+                  style={{
+                    ...styles.button,
+                    ...styles.buttonPrimary,
+                    ...(isLoading || !conversationUrl || !conversationId ? styles.buttonDisabled : {})
+                  }}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader size={12} />
+                      Connecting...
+                    </>
+                  ) : (
+                    <>
+                      <Video size={12} />
+                      Connect
+                    </>
+                  )}
+                </button>
+              ) : (
+                <button
+                  onClick={disconnectCall}
+                  style={{
+                    ...styles.button,
+                    ...styles.buttonDanger
+                  }}
+                >
+                  Disconnect
+                </button>
+              )}
             </div>
-            
-            {!isConnected ? (
-              <button
-                onClick={initializeCall}
-                disabled={isLoading || !conversationUrl || !conversationId}
-                style={{
-                  ...styles.button,
-                  ...styles.buttonPrimary,
-                  ...(isLoading || !conversationUrl || !conversationId ? styles.buttonDisabled : {})
-                }}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader size={12} />
-                    Connecting...
-                  </>
-                ) : (
-                  <>
-                    <Video size={12} />
-                    Connect
-                  </>
-                )}
-              </button>
-            ) : (
-              <button
-                onClick={disconnectCall}
-                style={{
-                  ...styles.button,
-                  ...styles.buttonDanger
-                }}
-              >
-                Disconnect
-              </button>
+
+            {error && (
+              <div style={styles.errorAlert}>
+                <AlertCircle size={12} />
+                {error}
+              </div>
             )}
           </div>
 
-          {error && (
-            <div style={styles.errorAlert}>
-              <AlertCircle size={12} />
-              {error}
+          {/* Interaction Protocol Controls */}
+          {isConnected && (
+            <div style={styles.interactionSection}>
+              <h3 style={styles.sectionTitle}>
+                <Settings size={16} />
+                Interaction Controls
+              </h3>
+              
+              {/* Interaction Type Selector */}
+              <div style={{marginBottom: '12px'}}>
+                <label style={styles.label}>Select Interaction Type</label>
+                <select
+                  value={selectedInteraction}
+                  onChange={(e) => setSelectedInteraction(e.target.value as typeof selectedInteraction)}
+                  style={styles.selectInput}
+                >
+                  <option value="echo">Echo - Make replica say exact text</option>
+                  <option value="respond">Respond - Send text for replica to respond to</option>
+                  <option value="interrupt">Interrupt - Stop replica immediately</option>
+                  <option value="context">Context - Change conversational context</option>
+                  <option value="sensitivity">Sensitivity - Adjust VAD settings</option>
+                </select>
+              </div>
+
+              {/* Dynamic Controls Based on Selection */}
+              <div style={styles.compactInteractionControl}>
+                {selectedInteraction === 'echo' && (
+                  <div>
+                    <h4 style={styles.interactionTitle}>Echo Interaction</h4>
+                    <p style={styles.interactionDesc}>Make the replica say exactly what you type</p>
+                    <div style={styles.compactInputRow}>
+                      <input
+                        type="text"
+                        value={echoText}
+                        onChange={(e) => setEchoText(e.target.value)}
+                        placeholder="Text for replica to say..."
+                        style={styles.compactInput}
+                      />
+                      <button
+                        onClick={sendEchoInteraction}
+                        disabled={!echoText.trim()}
+                        style={{
+                          ...styles.compactButton,
+                          ...(!echoText.trim() ? styles.buttonDisabled : {})
+                        }}
+                      >
+                        Echo
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {selectedInteraction === 'respond' && (
+                  <div>
+                    <h4 style={styles.interactionTitle}>Text Respond Interaction</h4>
+                    <p style={styles.interactionDesc}>Send text that the replica will respond to</p>
+                    <div style={styles.compactInputRow}>
+                      <input
+                        type="text"
+                        value={respondText}
+                        onChange={(e) => setRespondText(e.target.value)}
+                        placeholder="Text for replica to respond to..."
+                        style={styles.compactInput}
+                      />
+                      <button
+                        onClick={sendRespondInteraction}
+                        disabled={!respondText.trim()}
+                        style={{
+                          ...styles.compactButton,
+                          ...(!respondText.trim() ? styles.buttonDisabled : {})
+                        }}
+                      >
+                        Respond
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {selectedInteraction === 'interrupt' && (
+                  <div>
+                    <h4 style={styles.interactionTitle}>Interrupt Interaction</h4>
+                    <p style={styles.interactionDesc}>Stop the replica from talking immediately</p>
+                    <button
+                      onClick={sendInterruptInteraction}
+                      style={{
+                        ...styles.button,
+                        ...styles.buttonDanger,
+                        fontSize: '11px'
+                      }}
+                    >
+                      <AlertCircle size={12} />
+                      Interrupt Replica
+                    </button>
+                  </div>
+                )}
+
+                {selectedInteraction === 'context' && (
+                  <div>
+                    <h4 style={styles.interactionTitle}>Overwrite Conversational Context</h4>
+                    <p style={styles.interactionDesc}>Change the conversational context</p>
+                    <div style={styles.compactInputRow}>
+                      <textarea
+                        value={contextText}
+                        onChange={(e) => setContextText(e.target.value)}
+                        placeholder="New conversational context..."
+                        style={{
+                          ...styles.compactInput,
+                          minHeight: '60px',
+                          resize: 'vertical' as const
+                        }}
+                      />
+                      <button
+                        onClick={sendContextInteraction}
+                        disabled={!contextText.trim()}
+                        style={{
+                          ...styles.compactButton,
+                          ...(!contextText.trim() ? styles.buttonDisabled : {}),
+                          alignSelf: 'flex-start'
+                        }}
+                      >
+                        Update
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {selectedInteraction === 'sensitivity' && (
+                  <div>
+                    <h4 style={styles.interactionTitle}>Sensitivity Interaction (VAD)</h4>
+                    <p style={styles.interactionDesc}>Adjust Voice Activity Detection sensitivity</p>
+                    
+                    <div style={styles.sensitivityGrid}>
+                      <div>
+                        <label style={styles.label}>Pause</label>
+                        <select
+                          value={pauseSensitivity}
+                          onChange={(e) => setPauseSensitivity(e.target.value as 'low' | 'medium' | 'high')}
+                          style={styles.selectInput}
+                        >
+                          <option value="low">Low</option>
+                          <option value="medium">Medium</option>
+                          <option value="high">High</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label style={styles.label}>Interrupt</label>
+                        <select
+                          value={interruptSensitivity}
+                          onChange={(e) => setInterruptSensitivity(e.target.value as 'low' | 'medium' | 'high')}
+                          style={styles.selectInput}
+                        >
+                          <option value="low">Low</option>
+                          <option value="medium">Medium</option>
+                          <option value="high">High</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <button
+                      onClick={sendSensitivityInteraction}
+                      style={{
+                        ...styles.button,
+                        ...styles.buttonPrimary,
+                        fontSize: '11px',
+                        marginTop: '6px'
+                      }}
+                    >
+                      Update Sensitivity
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -874,230 +1024,56 @@ const TavusPOC = () => {
             </div>
           )}
         </div>
-      </div>
-
-      {/* Bottom Grid - Interactions and Chat */}
-      <div style={styles.bottomGrid}>
-        {/* Interaction Protocol Controls */}
-        {isConnected && (
-          <div style={styles.interactionSection}>
-            <h3 style={styles.sectionTitle}>
-              <Settings size={16} />
-              Interaction Controls
-            </h3>
-            
-            {/* Interaction Type Selector */}
-            <div style={{marginBottom: '12px'}}>
-              <label style={styles.label}>Select Interaction Type</label>
-              <select
-                value={selectedInteraction}
-                onChange={(e) => setSelectedInteraction(e.target.value as typeof selectedInteraction)}
-                style={styles.selectInput}
+      </div>      {/* Chat Interface */}
+      <div style={{
+        backgroundColor: '#f9fafb',
+        borderRadius: '8px',
+        padding: '16px',
+        marginTop: '16px'
+      }}>
+        <h3 style={styles.sectionTitle}>
+          <MessageSquare size={16} />
+          Conversation Log
+        </h3>
+        
+        {/* Messages */}
+        <div style={styles.messagesContainer}>
+          {messages.length === 0 ? (
+            <div style={styles.messagesPlaceholder}>
+              <MessageSquare size={24} style={{marginBottom: '6px', opacity: 0.5}} />
+              <p style={{fontSize: '0.75rem'}}>No messages yet. Start a conversation!</p>
+            </div>
+          ) : (
+            messages.map((msg) => (
+              <div 
+                key={msg.id} 
+                style={{
+                  ...styles.messageRow,
+                  ...(msg.sender === 'user' ? styles.messageRightAlign : styles.messageLeftAlign)
+                }}
               >
-                <option value="echo">Echo - Make replica say exact text</option>
-                <option value="respond">Respond - Send text for replica to respond to</option>
-                <option value="interrupt">Interrupt - Stop replica immediately</option>
-                <option value="context">Context - Change conversational context</option>
-                <option value="sensitivity">Sensitivity - Adjust VAD settings</option>
-              </select>
-            </div>
-
-            {/* Dynamic Controls Based on Selection */}
-            <div style={styles.compactInteractionControl}>
-              {selectedInteraction === 'echo' && (
-                <div>
-                  <h4 style={styles.interactionTitle}>Echo Interaction</h4>
-                  <p style={styles.interactionDesc}>Make the replica say exactly what you type</p>
-                  <div style={styles.compactInputRow}>
-                    <input
-                      type="text"
-                      value={echoText}
-                      onChange={(e) => setEchoText(e.target.value)}
-                      placeholder="Text for replica to say..."
-                      style={styles.compactInput}
-                    />
-                    <button
-                      onClick={sendEchoInteraction}
-                      disabled={!echoText.trim()}
-                      style={{
-                        ...styles.compactButton,
-                        ...(!echoText.trim() ? styles.buttonDisabled : {})
-                      }}
-                    >
-                      Echo
-                    </button>
-                  </div>
+                <div style={
+                  msg.sender === 'user' ? styles.messageUser :
+                  msg.sender === 'replica' ? styles.messageReplica :
+                  styles.messageSystem
+                }>
+                  <p style={styles.messageText}>{msg.text}</p>
+                  <p style={styles.messageTime}>{msg.timestamp}</p>
                 </div>
-              )}
-
-              {selectedInteraction === 'respond' && (
-                <div>
-                  <h4 style={styles.interactionTitle}>Text Respond Interaction</h4>
-                  <p style={styles.interactionDesc}>Send text that the replica will respond to</p>
-                  <div style={styles.compactInputRow}>
-                    <input
-                      type="text"
-                      value={respondText}
-                      onChange={(e) => setRespondText(e.target.value)}
-                      placeholder="Text for replica to respond to..."
-                      style={styles.compactInput}
-                    />
-                    <button
-                      onClick={sendRespondInteraction}
-                      disabled={!respondText.trim()}
-                      style={{
-                        ...styles.compactButton,
-                        ...(!respondText.trim() ? styles.buttonDisabled : {})
-                      }}
-                    >
-                      Respond
-                    </button>
-                  </div>
+                <div style={{
+                  ...styles.messageSender,
+                  ...(msg.sender === 'user' ? styles.messageRightAlign : styles.messageLeftAlign)
+                }}>
+                  {msg.sender === 'user' ? 'You' : msg.sender === 'replica' ? 'Replica' : 'System'}
                 </div>
-              )}
-
-              {selectedInteraction === 'interrupt' && (
-                <div>
-                  <h4 style={styles.interactionTitle}>Interrupt Interaction</h4>
-                  <p style={styles.interactionDesc}>Stop the replica from talking immediately</p>
-                  <button
-                    onClick={sendInterruptInteraction}
-                    style={{
-                      ...styles.button,
-                      ...styles.buttonDanger,
-                      fontSize: '11px'
-                    }}
-                  >
-                    <AlertCircle size={12} />
-                    Interrupt Replica
-                  </button>
-                </div>
-              )}
-
-              {selectedInteraction === 'context' && (
-                <div>
-                  <h4 style={styles.interactionTitle}>Overwrite Conversational Context</h4>
-                  <p style={styles.interactionDesc}>Change the conversational context</p>
-                  <div style={styles.compactInputRow}>
-                    <textarea
-                      value={contextText}
-                      onChange={(e) => setContextText(e.target.value)}
-                      placeholder="New conversational context..."
-                      style={{
-                        ...styles.compactInput,
-                        minHeight: '60px',
-                        resize: 'vertical' as const
-                      }}
-                    />
-                    <button
-                      onClick={sendContextInteraction}
-                      disabled={!contextText.trim()}
-                      style={{
-                        ...styles.compactButton,
-                        ...(!contextText.trim() ? styles.buttonDisabled : {}),
-                        alignSelf: 'flex-start'
-                      }}
-                    >
-                      Update
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {selectedInteraction === 'sensitivity' && (
-                <div>
-                  <h4 style={styles.interactionTitle}>Sensitivity Interaction (VAD)</h4>
-                  <p style={styles.interactionDesc}>Adjust Voice Activity Detection sensitivity</p>
-                  
-                  <div style={styles.sensitivityGrid}>
-                    <div>
-                      <label style={styles.label}>Pause</label>
-                      <select
-                        value={pauseSensitivity}
-                        onChange={(e) => setPauseSensitivity(e.target.value as 'low' | 'medium' | 'high')}
-                        style={styles.selectInput}
-                      >
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label style={styles.label}>Interrupt</label>
-                      <select
-                        value={interruptSensitivity}
-                        onChange={(e) => setInterruptSensitivity(e.target.value as 'low' | 'medium' | 'high')}
-                        style={styles.selectInput}
-                      >
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                      </select>
-                    </div>
-                  </div>
-                  
-                  <button
-                    onClick={sendSensitivityInteraction}
-                    style={{
-                      ...styles.button,
-                      ...styles.buttonPrimary,
-                      fontSize: '11px',
-                      marginTop: '6px'
-                    }}
-                  >
-                    Update Sensitivity
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Chat Interface */}
-        <div style={styles.chatSection}>
-          <h3 style={styles.sectionTitle}>
-            <MessageCircle size={16} />
-            Conversation Log
-          </h3>
-          
-          {/* Messages */}
-          <div style={styles.messagesContainer}>
-            {messages.length === 0 ? (
-              <div style={styles.messagesPlaceholder}>
-                <MessageCircle size={24} style={{marginBottom: '6px', opacity: 0.5}} />
-                <p style={{fontSize: '0.75rem'}}>No messages yet. Start a conversation!</p>
               </div>
-            ) : (
-              messages.map((msg) => (
-                <div 
-                  key={msg.id} 
-                  style={{
-                    ...styles.messageRow,
-                    ...(msg.sender === 'user' ? styles.messageRightAlign : styles.messageLeftAlign)
-                  }}
-                >
-                  <div style={
-                    msg.sender === 'user' ? styles.messageUser :
-                    msg.sender === 'replica' ? styles.messageReplica :
-                    styles.messageSystem
-                  }>
-                    <p style={styles.messageText}>{msg.text}</p>
-                    <p style={styles.messageTime}>{msg.timestamp}</p>
-                  </div>
-                  <div style={{
-                    ...styles.messageSender,
-                    ...(msg.sender === 'user' ? styles.messageRightAlign : styles.messageLeftAlign)
-                  }}>
-                    {msg.sender === 'user' ? 'You' : msg.sender === 'replica' ? 'Replica' : 'System'}
-                  </div>
-                </div>
-              ))
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+            ))
+          )}
+          <div ref={messagesEndRef} />
+        </div>
 
-          {/* Message Input */}
+        {/* Message Input */}
+        {isConnected && (
           <div style={styles.inputRow}>
             <input
               type="text"
@@ -1122,7 +1098,7 @@ const TavusPOC = () => {
               <Send size={12} />
             </button>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
