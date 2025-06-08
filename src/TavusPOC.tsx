@@ -20,8 +20,14 @@ const TavusPOC = () => {
   const [conversationId, setConversationId] = useState('');
   const [isMuted, setIsMuted] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
-  const [error, setError] = useState('');
-  const [showVideo, setShowVideo] = useState(false);
+  const [error, setError] = useState('');  const [showVideo, setShowVideo] = useState(false);
+  
+  // Interaction controls state
+  const [echoText, setEchoText] = useState('');
+  const [respondText, setRespondText] = useState('');
+  const [contextText, setContextText] = useState('');
+  const [pauseSensitivity, setPauseSensitivity] = useState<'low' | 'medium' | 'high'>('medium');
+  const [interruptSensitivity, setInterruptSensitivity] = useState<'low' | 'medium' | 'high'>('medium');
   
   const callRef = useRef<DailyCall | null>(null);
   const videoContainerRef = useRef<HTMLDivElement | null>(null);
@@ -480,7 +486,6 @@ const TavusPOC = () => {
       }
     }
   };
-
   // Send message to replica
   const sendMessage = () => {
     if (!message.trim() || !callRef.current || !isConnected) return;
@@ -504,6 +509,140 @@ const TavusPOC = () => {
         setError(`Failed to send message: ${err.message}`);
       } else {
         setError('Failed to send message: Unknown error');
+      }
+    }
+  };
+
+  // Interaction Protocol Functions
+  
+  // Echo Interaction - Make replica say exact text
+  const sendEchoInteraction = () => {
+    if (!echoText.trim() || !callRef.current || !isConnected) return;
+
+    const interaction = {
+      message_type: 'conversation',
+      event_type: 'conversation.echo',
+      conversation_id: conversationId,
+      properties: {
+        text: echoText
+      }
+    };
+
+    try {
+      callRef.current.sendAppMessage(interaction, '*');
+      addMessage('system', `Echo: "${echoText}"`);
+      console.log('Sent echo interaction:', interaction);
+      setEchoText('');
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(`Failed to send echo: ${err.message}`);
+      } else {
+        setError('Failed to send echo: Unknown error');
+      }
+    }
+  };
+
+  // Respond Interaction - Send text for replica to respond to
+  const sendRespondInteraction = () => {
+    if (!respondText.trim() || !callRef.current || !isConnected) return;
+
+    const interaction = {
+      message_type: 'conversation',
+      event_type: 'conversation.respond',
+      conversation_id: conversationId,
+      properties: {
+        text: respondText
+      }
+    };
+
+    try {
+      callRef.current.sendAppMessage(interaction, '*');
+      addMessage('system', `Respond to: "${respondText}"`);
+      console.log('Sent respond interaction:', interaction);
+      setRespondText('');
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(`Failed to send respond: ${err.message}`);
+      } else {
+        setError('Failed to send respond: Unknown error');
+      }
+    }
+  };
+
+  // Interrupt Interaction - Stop replica from talking
+  const sendInterruptInteraction = () => {
+    if (!callRef.current || !isConnected) return;
+
+    const interaction = {
+      message_type: 'conversation',
+      event_type: 'conversation.interrupt',
+      conversation_id: conversationId,
+      properties: {}
+    };
+
+    try {
+      callRef.current.sendAppMessage(interaction, '*');
+      addMessage('system', 'Interrupted replica');
+      console.log('Sent interrupt interaction:', interaction);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(`Failed to send interrupt: ${err.message}`);
+      } else {
+        setError('Failed to send interrupt: Unknown error');
+      }
+    }
+  };
+
+  // Overwrite Context Interaction - Change conversational context
+  const sendContextInteraction = () => {
+    if (!contextText.trim() || !callRef.current || !isConnected) return;
+
+    const interaction = {
+      message_type: 'conversation',
+      event_type: 'conversation.overwrite_context',
+      conversation_id: conversationId,
+      properties: {
+        context: contextText
+      }
+    };
+
+    try {
+      callRef.current.sendAppMessage(interaction, '*');
+      addMessage('system', `Context updated: "${contextText.substring(0, 50)}..."`);
+      console.log('Sent context interaction:', interaction);
+      setContextText('');
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(`Failed to send context: ${err.message}`);
+      } else {
+        setError('Failed to send context: Unknown error');
+      }
+    }
+  };
+
+  // Sensitivity Interaction - Update VAD sensitivity
+  const sendSensitivityInteraction = () => {
+    if (!callRef.current || !isConnected) return;
+
+    const interaction = {
+      message_type: 'conversation',
+      event_type: 'conversation.sensitivity',
+      conversation_id: conversationId,
+      properties: {
+        participant_pause_sensitivity: pauseSensitivity,
+        participant_interrupt_sensitivity: interruptSensitivity
+      }
+    };
+
+    try {
+      callRef.current.sendAppMessage(interaction, '*');
+      addMessage('system', `Sensitivity updated: Pause=${pauseSensitivity}, Interrupt=${interruptSensitivity}`);
+      console.log('Sent sensitivity interaction:', interaction);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(`Failed to send sensitivity: ${err.message}`);
+      } else {
+        setError('Failed to send sensitivity: Unknown error');
       }
     }
   };
@@ -634,15 +773,197 @@ const TavusPOC = () => {
               </button>
             )}
           </div>
-        </div>
-
-        {error && (
+        </div>        {error && (
           <div style={styles.errorAlert}>
             <AlertCircle size={16} />
             {error}
           </div>
         )}
       </div>
+
+      {/* Interaction Protocol Controls */}
+      {isConnected && (
+        <div style={styles.configSection}>
+          <h2 style={styles.configTitle}>
+            <Settings size={20} />
+            Interaction Protocol Controls
+          </h2>
+          
+          {/* Echo Interaction */}
+          <div style={{marginBottom: '20px'}}>
+            <h4 style={{fontSize: '1rem', fontWeight: '600', marginBottom: '8px', color: '#374151'}}>
+              Echo Interaction
+            </h4>
+            <p style={{fontSize: '0.875rem', color: '#6b7280', marginBottom: '8px'}}>
+              Make the replica say exactly what you type
+            </p>
+            <div style={styles.inputRow}>
+              <input
+                type="text"
+                value={echoText}
+                onChange={(e) => setEchoText(e.target.value)}
+                placeholder="Text for replica to say exactly..."
+                style={styles.messageInput}
+              />
+              <button
+                onClick={sendEchoInteraction}
+                disabled={!echoText.trim()}
+                style={{
+                  ...styles.sendButton,
+                  ...(!echoText.trim() ? styles.buttonDisabled : {})
+                }}
+              >
+                Echo
+              </button>
+            </div>
+          </div>
+
+          {/* Respond Interaction */}
+          <div style={{marginBottom: '20px'}}>
+            <h4 style={{fontSize: '1rem', fontWeight: '600', marginBottom: '8px', color: '#374151'}}>
+              Text Respond Interaction
+            </h4>
+            <p style={{fontSize: '0.875rem', color: '#6b7280', marginBottom: '8px'}}>
+              Send text that the replica will respond to (as if user said it)
+            </p>
+            <div style={styles.inputRow}>
+              <input
+                type="text"
+                value={respondText}
+                onChange={(e) => setRespondText(e.target.value)}
+                placeholder="Text for replica to respond to..."
+                style={styles.messageInput}
+              />
+              <button
+                onClick={sendRespondInteraction}
+                disabled={!respondText.trim()}
+                style={{
+                  ...styles.sendButton,
+                  ...(!respondText.trim() ? styles.buttonDisabled : {})
+                }}
+              >
+                Respond
+              </button>
+            </div>
+          </div>
+
+          {/* Interrupt Interaction */}
+          <div style={{marginBottom: '20px'}}>
+            <h4 style={{fontSize: '1rem', fontWeight: '600', marginBottom: '8px', color: '#374151'}}>
+              Interrupt Interaction
+            </h4>
+            <p style={{fontSize: '0.875rem', color: '#6b7280', marginBottom: '8px'}}>
+              Stop the replica from talking immediately
+            </p>
+            <button
+              onClick={sendInterruptInteraction}
+              style={{
+                ...styles.button,
+                ...styles.buttonDanger
+              }}
+            >
+              <AlertCircle size={16} />
+              Interrupt Replica
+            </button>
+          </div>
+
+          {/* Overwrite Context Interaction */}
+          <div style={{marginBottom: '20px'}}>
+            <h4 style={{fontSize: '1rem', fontWeight: '600', marginBottom: '8px', color: '#374151'}}>
+              Overwrite Conversational Context
+            </h4>
+            <p style={{fontSize: '0.875rem', color: '#6b7280', marginBottom: '8px'}}>
+              Change the conversational context that the replica uses to generate responses
+            </p>
+            <div style={styles.inputRow}>
+              <textarea
+                value={contextText}
+                onChange={(e) => setContextText(e.target.value)}
+                placeholder="New conversational context for the replica..."
+                style={{
+                  ...styles.messageInput,
+                  minHeight: '80px',
+                  resize: 'vertical' as const
+                }}
+              />
+              <button
+                onClick={sendContextInteraction}
+                disabled={!contextText.trim()}
+                style={{
+                  ...styles.sendButton,
+                  ...(!contextText.trim() ? styles.buttonDisabled : {}),
+                  alignSelf: 'flex-start'
+                }}
+              >
+                Update Context
+              </button>
+            </div>
+          </div>
+
+          {/* Sensitivity Interaction */}
+          <div style={{marginBottom: '20px'}}>
+            <h4 style={{fontSize: '1rem', fontWeight: '600', marginBottom: '8px', color: '#374151'}}>
+              Sensitivity Interaction (VAD)
+            </h4>
+            <p style={{fontSize: '0.875rem', color: '#6b7280', marginBottom: '12px'}}>
+              Adjust Voice Activity Detection sensitivity for pauses and interruptions
+            </p>
+            
+            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '12px'}}>
+              <div>
+                <label style={styles.label}>Pause Sensitivity</label>
+                <select
+                  value={pauseSensitivity}
+                  onChange={(e) => setPauseSensitivity(e.target.value as 'low' | 'medium' | 'high')}
+                  style={{
+                    ...styles.input,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+              
+              <div>
+                <label style={styles.label}>Interrupt Sensitivity</label>
+                <select
+                  value={interruptSensitivity}
+                  onChange={(e) => setInterruptSensitivity(e.target.value as 'low' | 'medium' | 'high')}
+                  style={{
+                    ...styles.input,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+              
+              <div style={{display: 'flex', alignItems: 'end'}}>
+                <button
+                  onClick={sendSensitivityInteraction}
+                  style={{
+                    ...styles.button,
+                    ...styles.buttonPrimary,
+                    width: '100%'
+                  }}
+                >
+                  Update Sensitivity
+                </button>
+              </div>
+            </div>
+            
+            <div style={{fontSize: '0.75rem', color: '#6b7280'}}>
+              <strong>Low:</strong> Less sensitive (longer pauses needed)<br/>
+              <strong>Medium:</strong> Balanced sensitivity<br/>
+              <strong>High:</strong> More sensitive (shorter pauses trigger detection)
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Interface */}
       <div style={styles.mainGrid}>
@@ -759,12 +1080,26 @@ const TavusPOC = () => {
           <li>3. Enter your conversation URL and ID in the configuration section above</li>
           <li>4. Click "Connect" to establish the connection</li>
           <li>5. Start typing messages to interact with your replica</li>
+          <li>6. Use the Interaction Protocol Controls to test advanced features</li>
         </ol>
+        
+        <div style={{marginTop: '20px'}}>
+          <h4 style={{fontSize: '1rem', fontWeight: '600', color: '#1e40af', marginBottom: '8px'}}>
+            Interaction Protocol Features:
+          </h4>
+          <ul style={{...styles.instructionsList, paddingLeft: '20px'}}>
+            <li><strong>Echo:</strong> Make the replica say exactly what you type</li>
+            <li><strong>Respond:</strong> Send text that the replica will respond to (as if user said it)</li>
+            <li><strong>Interrupt:</strong> Stop the replica from talking immediately</li>
+            <li><strong>Context:</strong> Change the conversational context the replica uses</li>
+            <li><strong>Sensitivity:</strong> Adjust Voice Activity Detection for pauses and interruptions</li>
+          </ul>
+        </div>
         
         <div style={{marginTop: '16px', padding: '12px', backgroundColor: '#fef3c7', borderRadius: '6px', border: '1px solid #f59e0b'}}>
           <p style={{margin: '0', fontSize: '0.875rem', color: '#92400e'}}>
             <strong>Note:</strong> The video feed will only appear when you successfully connect to a valid Tavus conversation URL. 
-            Make sure you have the correct Daily.co room URL from your Tavus dashboard.
+            The Interaction Protocol Controls will appear once connected and allow you to test all the available interaction types.
           </p>
         </div>
       </div>
