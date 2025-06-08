@@ -28,6 +28,7 @@ const TavusPOC = () => {
   const [contextText, setContextText] = useState('');
   const [pauseSensitivity, setPauseSensitivity] = useState<'low' | 'medium' | 'high'>('medium');
   const [interruptSensitivity, setInterruptSensitivity] = useState<'low' | 'medium' | 'high'>('medium');
+  const [selectedInteraction, setSelectedInteraction] = useState<'echo' | 'respond' | 'interrupt' | 'context' | 'sensitivity'>('echo');
   
   const callRef = useRef<DailyCall | null>(null);
   const videoContainerRef = useRef<HTMLDivElement | null>(null);
@@ -36,76 +37,87 @@ const TavusPOC = () => {
   // Inline styles
   const styles = {
     container: {
-      maxWidth: '1200px',
+      maxWidth: '1400px',
       margin: '0 auto',
-      padding: '24px',
+      padding: '16px',
       backgroundColor: '#ffffff',
-      fontFamily: 'system-ui, -apple-system, sans-serif'
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      minHeight: '100vh'
     } as React.CSSProperties,
     header: {
-      marginBottom: '32px'
+      marginBottom: '16px',
+      textAlign: 'center' as const
     } as React.CSSProperties,
     title: {
-      fontSize: '2rem',
+      fontSize: '1.5rem',
       fontWeight: 'bold',
       color: '#1f2937',
-      marginBottom: '8px'
+      marginBottom: '4px'
     } as React.CSSProperties,
     subtitle: {
-      color: '#6b7280'
+      color: '#6b7280',
+      fontSize: '0.875rem'
+    } as React.CSSProperties,
+    topGrid: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 2fr',
+      gap: '16px',
+      marginBottom: '16px',
+      height: 'auto'
     } as React.CSSProperties,
     configSection: {
       backgroundColor: '#f9fafb',
       borderRadius: '8px',
-      padding: '24px',
-      marginBottom: '24px'
+      padding: '16px',
+      height: 'fit-content'
     } as React.CSSProperties,
     configTitle: {
-      fontSize: '1.25rem',
+      fontSize: '1rem',
       fontWeight: '600',
-      marginBottom: '16px',
+      marginBottom: '12px',
       display: 'flex',
       alignItems: 'center',
-      gap: '8px'
+      gap: '6px'
     } as React.CSSProperties,
     inputGrid: {
       display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '16px',
-      marginBottom: '16px'
+      gridTemplateColumns: '1fr',
+      gap: '12px',
+      marginBottom: '12px'
     } as React.CSSProperties,
     inputField: {
       display: 'flex',
       flexDirection: 'column'
     } as React.CSSProperties,
     label: {
-      fontSize: '0.875rem',
+      fontSize: '0.75rem',
       fontWeight: '500',
       color: '#374151',
-      marginBottom: '8px'
+      marginBottom: '4px'
     } as React.CSSProperties,
     input: {
       width: '100%',
-      padding: '12px',
+      padding: '8px',
       border: '1px solid #d1d5db',
-      borderRadius: '6px',
-      fontSize: '14px',
+      borderRadius: '4px',
+      fontSize: '12px',
       outline: 'none',
       transition: 'border-color 0.2s'
     } as React.CSSProperties,
     statusBar: {
       display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center'
+      flexDirection: 'column',
+      gap: '8px'
     } as React.CSSProperties,
     statusIndicator: {
-      padding: '8px 16px',
-      borderRadius: '20px',
-      fontSize: '0.875rem',
+      padding: '6px 12px',
+      borderRadius: '16px',
+      fontSize: '0.75rem',
       fontWeight: '500',
       display: 'flex',
       alignItems: 'center',
-      gap: '4px'
+      gap: '4px',
+      justifyContent: 'center'
     } as React.CSSProperties,
     statusConnected: {
       backgroundColor: '#d1fae5',
@@ -124,16 +136,18 @@ const TavusPOC = () => {
       color: '#991b1b'
     } as React.CSSProperties,
     button: {
-      padding: '12px 24px',
+      padding: '8px 16px',
       border: 'none',
-      borderRadius: '6px',
-      fontSize: '14px',
+      borderRadius: '4px',
+      fontSize: '12px',
       fontWeight: '500',
       cursor: 'pointer',
       display: 'flex',
       alignItems: 'center',
-      gap: '8px',
-      transition: 'background-color 0.2s'
+      justifyContent: 'center',
+      gap: '6px',
+      transition: 'background-color 0.2s',
+      width: '100%'
     } as React.CSSProperties,
     buttonPrimary: {
       backgroundColor: '#3b82f6',
@@ -147,34 +161,32 @@ const TavusPOC = () => {
       opacity: 0.5,
       cursor: 'not-allowed'
     } as React.CSSProperties,
-    mainGrid: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '24px'
-    } as React.CSSProperties,
-    section: {
+    videoSection: {
       backgroundColor: '#f9fafb',
       borderRadius: '8px',
-      padding: '16px'
+      padding: '16px',
+      display: 'flex',
+      flexDirection: 'column'
     } as React.CSSProperties,
     sectionTitle: {
-      fontSize: '1.125rem',
+      fontSize: '1rem',
       fontWeight: '600',
-      marginBottom: '16px',
+      marginBottom: '12px',
       display: 'flex',
       alignItems: 'center',
-      gap: '8px'
+      gap: '6px'
     } as React.CSSProperties,
     videoContainer: {
       width: '100%',
-      height: '400px',
+      height: '300px',
       backgroundColor: '#000',
-      borderRadius: '8px',
+      borderRadius: '6px',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       border: '1px solid #e5e7eb',
-      position: 'relative'
+      position: 'relative',
+      marginBottom: '12px'
     } as React.CSSProperties,
     videoPlaceholder: {
       textAlign: 'center' as const,
@@ -183,7 +195,6 @@ const TavusPOC = () => {
     controls: {
       display: 'flex',
       justifyContent: 'center',
-      marginTop: '16px',
       gap: '8px'
     } as React.CSSProperties,
     controlButton: {
@@ -192,23 +203,38 @@ const TavusPOC = () => {
       border: 'none',
       cursor: 'pointer'
     } as React.CSSProperties,
+    bottomGrid: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: '16px'
+    } as React.CSSProperties,
+    interactionSection: {
+      backgroundColor: '#f9fafb',
+      borderRadius: '8px',
+      padding: '16px'
+    } as React.CSSProperties,
+    chatSection: {
+      backgroundColor: '#f9fafb',
+      borderRadius: '8px',
+      padding: '16px'
+    } as React.CSSProperties,
     messagesContainer: {
-      height: '300px',
+      height: '200px',
       overflowY: 'auto' as const,
-      marginBottom: '16px',
-      padding: '12px',
+      marginBottom: '12px',
+      padding: '8px',
       backgroundColor: 'white',
       border: '1px solid #e5e7eb',
-      borderRadius: '6px'
+      borderRadius: '4px'
     },
     messagesPlaceholder: {
       textAlign: 'center' as const,
       color: '#6b7280',
-      paddingTop: '64px',
-      paddingBottom: '64px'
+      paddingTop: '32px',
+      paddingBottom: '32px'
     },
     messageRow: {
-      marginBottom: '12px'
+      marginBottom: '8px'
     } as React.CSSProperties,
     messageRightAlign: {
       textAlign: 'right' as const
@@ -219,89 +245,124 @@ const TavusPOC = () => {
     messageUser: {
       display: 'inline-block',
       maxWidth: '70%',
-      padding: '8px 12px',
-      borderRadius: '8px',
+      padding: '6px 10px',
+      borderRadius: '6px',
       backgroundColor: '#3b82f6',
       color: 'white'
     } as React.CSSProperties,
     messageReplica: {
       display: 'inline-block',
       maxWidth: '70%',
-      padding: '8px 12px',
-      borderRadius: '8px',
+      padding: '6px 10px',
+      borderRadius: '6px',
       backgroundColor: '#e5e7eb',
       color: '#1f2937'
     } as React.CSSProperties,
     messageSystem: {
       display: 'inline-block',
       maxWidth: '70%',
-      padding: '8px 12px',
-      borderRadius: '8px',
+      padding: '6px 10px',
+      borderRadius: '6px',
       backgroundColor: '#fef3c7',
       color: '#92400e'
     } as React.CSSProperties,
     messageText: {
-      fontSize: '0.875rem',
+      fontSize: '0.75rem',
       margin: '0'
     } as React.CSSProperties,
     messageTime: {
-      fontSize: '0.75rem',
+      fontSize: '0.625rem',
       opacity: 0.7,
-      marginTop: '4px'
+      marginTop: '2px'
     } as React.CSSProperties,
     messageSender: {
-      fontSize: '0.75rem',
+      fontSize: '0.625rem',
       color: '#6b7280',
-      marginTop: '4px'
+      marginTop: '2px'
     } as React.CSSProperties,
     inputRow: {
       display: 'flex',
-      gap: '8px'
+      gap: '6px'
     } as React.CSSProperties,
     messageInput: {
       flex: 1,
-      padding: '12px',
+      padding: '8px',
       border: '1px solid #d1d5db',
-      borderRadius: '6px',
-      fontSize: '14px',
+      borderRadius: '4px',
+      fontSize: '12px',
       outline: 'none'
     } as React.CSSProperties,
     sendButton: {
-      padding: '12px 16px',
+      padding: '8px 12px',
       backgroundColor: '#3b82f6',
       color: 'white',
       border: 'none',
-      borderRadius: '6px',
+      borderRadius: '4px',
       cursor: 'pointer',
       display: 'flex',
       alignItems: 'center'
     } as React.CSSProperties,
     errorAlert: {
-      marginTop: '16px',
-      padding: '12px',
+      marginTop: '8px',
+      padding: '8px',
       backgroundColor: '#fee2e2',
       border: '1px solid #fca5a5',
       color: '#991b1b',
-      borderRadius: '6px',
+      borderRadius: '4px',
       display: 'flex',
       alignItems: 'center',
-      gap: '8px'
+      gap: '6px',
+      fontSize: '0.75rem'
     } as React.CSSProperties,
-    instructions: {
-      marginTop: '32px',
-      backgroundColor: '#eff6ff',
-      borderRadius: '8px',
-      padding: '24px'
-    } as React.CSSProperties,
-    instructionsTitle: {
-      fontSize: '1.125rem',
-      fontWeight: '600',
-      color: '#1e40af',
+    compactInteractionControl: {
       marginBottom: '12px'
     } as React.CSSProperties,
-    instructionsList: {
-      color: '#1e40af',
-      lineHeight: '1.6'
+    interactionTitle: {
+      fontSize: '0.875rem',
+      fontWeight: '600',
+      marginBottom: '4px',
+      color: '#374151'
+    } as React.CSSProperties,
+    interactionDesc: {
+      fontSize: '0.75rem',
+      color: '#6b7280',
+      marginBottom: '6px'
+    } as React.CSSProperties,
+    compactInputRow: {
+      display: 'flex',
+      gap: '4px'
+    } as React.CSSProperties,
+    compactInput: {
+      flex: 1,
+      padding: '6px',
+      border: '1px solid #d1d5db',
+      borderRadius: '4px',
+      fontSize: '11px',
+      outline: 'none'
+    } as React.CSSProperties,
+    compactButton: {
+      padding: '6px 12px',
+      backgroundColor: '#3b82f6',
+      color: 'white',
+      border: 'none',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      fontSize: '11px',
+      whiteSpace: 'nowrap' as const
+    } as React.CSSProperties,
+    sensitivityGrid: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: '6px',
+      marginBottom: '6px'
+    } as React.CSSProperties,
+    selectInput: {
+      padding: '6px',
+      border: '1px solid #d1d5db',
+      borderRadius: '4px',
+      fontSize: '11px',
+      outline: 'none',
+      cursor: 'pointer'
     } as React.CSSProperties
   };
 
@@ -681,49 +742,48 @@ const TavusPOC = () => {
         <p style={styles.subtitle}>Test real-time interactions with Tavus digital replicas</p>
       </div>
 
-      {/* Configuration Section */}
-      <div style={styles.configSection}>
-        <h2 style={styles.configTitle}>
-          <Settings size={20} />
-          Configuration
-        </h2>
-        
-        <div style={styles.inputGrid}>
-          <div style={styles.inputField}>
-            <label style={styles.label}>
-              Conversation URL
-            </label>            <input
-              type="text"
-              value={conversationUrl}
-              onChange={(e) => setConversationUrl(e.target.value)}
-              placeholder="https://domain.daily.co/room-name"
-              style={{
-                ...styles.input,
-                ...(isConnected ? styles.buttonDisabled : {})
-              }}
-              disabled={isConnected}
-            />
-          </div>
+      {/* Top Grid - Configuration and Video */}
+      <div style={styles.topGrid}>
+        {/* Configuration Section */}
+        <div style={styles.configSection}>
+          <h2 style={styles.configTitle}>
+            <Settings size={16} />
+            Configuration
+          </h2>
           
-          <div style={styles.inputField}>
-            <label style={styles.label}>
-              Conversation ID
-            </label>            <input
-              type="text"
-              value={conversationId}
-              onChange={(e) => setConversationId(e.target.value)}
-              placeholder="tavus-conversation-123"
-              style={{
-                ...styles.input,
-                ...(isConnected ? styles.buttonDisabled : {})
-              }}
-              disabled={isConnected}
-            />
+          <div style={styles.inputGrid}>
+            <div style={styles.inputField}>
+              <label style={styles.label}>Conversation URL</label>
+              <input
+                type="text"
+                value={conversationUrl}
+                onChange={(e) => setConversationUrl(e.target.value)}
+                placeholder="https://domain.daily.co/room-name"
+                style={{
+                  ...styles.input,
+                  ...(isConnected ? styles.buttonDisabled : {})
+                }}
+                disabled={isConnected}
+              />
+            </div>
+            
+            <div style={styles.inputField}>
+              <label style={styles.label}>Conversation ID</label>
+              <input
+                type="text"
+                value={conversationId}
+                onChange={(e) => setConversationId(e.target.value)}
+                placeholder="tavus-conversation-123"
+                style={{
+                  ...styles.input,
+                  ...(isConnected ? styles.buttonDisabled : {})
+                }}
+                disabled={isConnected}
+              />
+            </div>
           </div>
-        </div>
 
-        <div style={styles.statusBar}>
-          <div>
+          <div style={styles.statusBar}>
             <div style={{
               ...styles.statusIndicator,
               ...(connectionStatus === 'connected' ? styles.statusConnected :
@@ -731,14 +791,12 @@ const TavusPOC = () => {
                  connectionStatus === 'error' ? styles.statusError :
                  styles.statusDisconnected)
             }}>
-              {connectionStatus === 'connected' && <CheckCircle size={16} />}
-              {connectionStatus === 'connecting' && <Loader size={16} />}
-              {connectionStatus === 'error' && <AlertCircle size={16} />}
+              {connectionStatus === 'connected' && <CheckCircle size={12} />}
+              {connectionStatus === 'connecting' && <Loader size={12} />}
+              {connectionStatus === 'error' && <AlertCircle size={12} />}
               {connectionStatus.charAt(0).toUpperCase() + connectionStatus.slice(1)}
             </div>
-          </div>
-          
-          <div>
+            
             {!isConnected ? (
               <button
                 onClick={initializeCall}
@@ -751,12 +809,12 @@ const TavusPOC = () => {
               >
                 {isLoading ? (
                   <>
-                    <Loader size={16} />
+                    <Loader size={12} />
                     Connecting...
                   </>
                 ) : (
                   <>
-                    <Video size={16} />
+                    <Video size={12} />
                     Connect
                   </>
                 )}
@@ -773,204 +831,19 @@ const TavusPOC = () => {
               </button>
             )}
           </div>
-        </div>        {error && (
-          <div style={styles.errorAlert}>
-            <AlertCircle size={16} />
-            {error}
-          </div>
-        )}
-      </div>
 
-      {/* Interaction Protocol Controls */}
-      {isConnected && (
-        <div style={styles.configSection}>
-          <h2 style={styles.configTitle}>
-            <Settings size={20} />
-            Interaction Protocol Controls
-          </h2>
-          
-          {/* Echo Interaction */}
-          <div style={{marginBottom: '20px'}}>
-            <h4 style={{fontSize: '1rem', fontWeight: '600', marginBottom: '8px', color: '#374151'}}>
-              Echo Interaction
-            </h4>
-            <p style={{fontSize: '0.875rem', color: '#6b7280', marginBottom: '8px'}}>
-              Make the replica say exactly what you type
-            </p>
-            <div style={styles.inputRow}>
-              <input
-                type="text"
-                value={echoText}
-                onChange={(e) => setEchoText(e.target.value)}
-                placeholder="Text for replica to say exactly..."
-                style={styles.messageInput}
-              />
-              <button
-                onClick={sendEchoInteraction}
-                disabled={!echoText.trim()}
-                style={{
-                  ...styles.sendButton,
-                  ...(!echoText.trim() ? styles.buttonDisabled : {})
-                }}
-              >
-                Echo
-              </button>
+          {error && (
+            <div style={styles.errorAlert}>
+              <AlertCircle size={12} />
+              {error}
             </div>
-          </div>
-
-          {/* Respond Interaction */}
-          <div style={{marginBottom: '20px'}}>
-            <h4 style={{fontSize: '1rem', fontWeight: '600', marginBottom: '8px', color: '#374151'}}>
-              Text Respond Interaction
-            </h4>
-            <p style={{fontSize: '0.875rem', color: '#6b7280', marginBottom: '8px'}}>
-              Send text that the replica will respond to (as if user said it)
-            </p>
-            <div style={styles.inputRow}>
-              <input
-                type="text"
-                value={respondText}
-                onChange={(e) => setRespondText(e.target.value)}
-                placeholder="Text for replica to respond to..."
-                style={styles.messageInput}
-              />
-              <button
-                onClick={sendRespondInteraction}
-                disabled={!respondText.trim()}
-                style={{
-                  ...styles.sendButton,
-                  ...(!respondText.trim() ? styles.buttonDisabled : {})
-                }}
-              >
-                Respond
-              </button>
-            </div>
-          </div>
-
-          {/* Interrupt Interaction */}
-          <div style={{marginBottom: '20px'}}>
-            <h4 style={{fontSize: '1rem', fontWeight: '600', marginBottom: '8px', color: '#374151'}}>
-              Interrupt Interaction
-            </h4>
-            <p style={{fontSize: '0.875rem', color: '#6b7280', marginBottom: '8px'}}>
-              Stop the replica from talking immediately
-            </p>
-            <button
-              onClick={sendInterruptInteraction}
-              style={{
-                ...styles.button,
-                ...styles.buttonDanger
-              }}
-            >
-              <AlertCircle size={16} />
-              Interrupt Replica
-            </button>
-          </div>
-
-          {/* Overwrite Context Interaction */}
-          <div style={{marginBottom: '20px'}}>
-            <h4 style={{fontSize: '1rem', fontWeight: '600', marginBottom: '8px', color: '#374151'}}>
-              Overwrite Conversational Context
-            </h4>
-            <p style={{fontSize: '0.875rem', color: '#6b7280', marginBottom: '8px'}}>
-              Change the conversational context that the replica uses to generate responses
-            </p>
-            <div style={styles.inputRow}>
-              <textarea
-                value={contextText}
-                onChange={(e) => setContextText(e.target.value)}
-                placeholder="New conversational context for the replica..."
-                style={{
-                  ...styles.messageInput,
-                  minHeight: '80px',
-                  resize: 'vertical' as const
-                }}
-              />
-              <button
-                onClick={sendContextInteraction}
-                disabled={!contextText.trim()}
-                style={{
-                  ...styles.sendButton,
-                  ...(!contextText.trim() ? styles.buttonDisabled : {}),
-                  alignSelf: 'flex-start'
-                }}
-              >
-                Update Context
-              </button>
-            </div>
-          </div>
-
-          {/* Sensitivity Interaction */}
-          <div style={{marginBottom: '20px'}}>
-            <h4 style={{fontSize: '1rem', fontWeight: '600', marginBottom: '8px', color: '#374151'}}>
-              Sensitivity Interaction (VAD)
-            </h4>
-            <p style={{fontSize: '0.875rem', color: '#6b7280', marginBottom: '12px'}}>
-              Adjust Voice Activity Detection sensitivity for pauses and interruptions
-            </p>
-            
-            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '12px'}}>
-              <div>
-                <label style={styles.label}>Pause Sensitivity</label>
-                <select
-                  value={pauseSensitivity}
-                  onChange={(e) => setPauseSensitivity(e.target.value as 'low' | 'medium' | 'high')}
-                  style={{
-                    ...styles.input,
-                    cursor: 'pointer'
-                  }}
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </div>
-              
-              <div>
-                <label style={styles.label}>Interrupt Sensitivity</label>
-                <select
-                  value={interruptSensitivity}
-                  onChange={(e) => setInterruptSensitivity(e.target.value as 'low' | 'medium' | 'high')}
-                  style={{
-                    ...styles.input,
-                    cursor: 'pointer'
-                  }}
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </div>
-              
-              <div style={{display: 'flex', alignItems: 'end'}}>
-                <button
-                  onClick={sendSensitivityInteraction}
-                  style={{
-                    ...styles.button,
-                    ...styles.buttonPrimary,
-                    width: '100%'
-                  }}
-                >
-                  Update Sensitivity
-                </button>
-              </div>
-            </div>
-            
-            <div style={{fontSize: '0.75rem', color: '#6b7280'}}>
-              <strong>Low:</strong> Less sensitive (longer pauses needed)<br/>
-              <strong>Medium:</strong> Balanced sensitivity<br/>
-              <strong>High:</strong> More sensitive (shorter pauses trigger detection)
-            </div>
-          </div>
+          )}
         </div>
-      )}
 
-      {/* Main Interface */}
-      <div style={styles.mainGrid}>
-        {/* Video Container */}
-        <div style={styles.section}>
+        {/* Video Section */}
+        <div style={styles.videoSection}>
           <h3 style={styles.sectionTitle}>
-            <Video size={20} />
+            <Video size={16} />
             Video Feed
           </h3>
           <div 
@@ -979,8 +852,8 @@ const TavusPOC = () => {
           >
             {!showVideo && (
               <div style={styles.videoPlaceholder}>
-                <Video size={48} style={{marginBottom: '8px', opacity: 0.5}} />
-                <p>Connect to start video conversation</p>
+                <Video size={32} style={{marginBottom: '8px', opacity: 0.5}} />
+                <p style={{fontSize: '0.875rem'}}>Connect to start video conversation</p>
               </div>
             )}
           </div>
@@ -996,16 +869,195 @@ const TavusPOC = () => {
                   color: isMuted ? 'white' : '#374151'
                 }}
               >
-                {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
+                {isMuted ? <MicOff size={16} /> : <Mic size={16} />}
               </button>
             </div>
           )}
         </div>
+      </div>
+
+      {/* Bottom Grid - Interactions and Chat */}
+      <div style={styles.bottomGrid}>
+        {/* Interaction Protocol Controls */}
+        {isConnected && (
+          <div style={styles.interactionSection}>
+            <h3 style={styles.sectionTitle}>
+              <Settings size={16} />
+              Interaction Controls
+            </h3>
+            
+            {/* Interaction Type Selector */}
+            <div style={{marginBottom: '12px'}}>
+              <label style={styles.label}>Select Interaction Type</label>
+              <select
+                value={selectedInteraction}
+                onChange={(e) => setSelectedInteraction(e.target.value as typeof selectedInteraction)}
+                style={styles.selectInput}
+              >
+                <option value="echo">Echo - Make replica say exact text</option>
+                <option value="respond">Respond - Send text for replica to respond to</option>
+                <option value="interrupt">Interrupt - Stop replica immediately</option>
+                <option value="context">Context - Change conversational context</option>
+                <option value="sensitivity">Sensitivity - Adjust VAD settings</option>
+              </select>
+            </div>
+
+            {/* Dynamic Controls Based on Selection */}
+            <div style={styles.compactInteractionControl}>
+              {selectedInteraction === 'echo' && (
+                <div>
+                  <h4 style={styles.interactionTitle}>Echo Interaction</h4>
+                  <p style={styles.interactionDesc}>Make the replica say exactly what you type</p>
+                  <div style={styles.compactInputRow}>
+                    <input
+                      type="text"
+                      value={echoText}
+                      onChange={(e) => setEchoText(e.target.value)}
+                      placeholder="Text for replica to say..."
+                      style={styles.compactInput}
+                    />
+                    <button
+                      onClick={sendEchoInteraction}
+                      disabled={!echoText.trim()}
+                      style={{
+                        ...styles.compactButton,
+                        ...(!echoText.trim() ? styles.buttonDisabled : {})
+                      }}
+                    >
+                      Echo
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {selectedInteraction === 'respond' && (
+                <div>
+                  <h4 style={styles.interactionTitle}>Text Respond Interaction</h4>
+                  <p style={styles.interactionDesc}>Send text that the replica will respond to</p>
+                  <div style={styles.compactInputRow}>
+                    <input
+                      type="text"
+                      value={respondText}
+                      onChange={(e) => setRespondText(e.target.value)}
+                      placeholder="Text for replica to respond to..."
+                      style={styles.compactInput}
+                    />
+                    <button
+                      onClick={sendRespondInteraction}
+                      disabled={!respondText.trim()}
+                      style={{
+                        ...styles.compactButton,
+                        ...(!respondText.trim() ? styles.buttonDisabled : {})
+                      }}
+                    >
+                      Respond
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {selectedInteraction === 'interrupt' && (
+                <div>
+                  <h4 style={styles.interactionTitle}>Interrupt Interaction</h4>
+                  <p style={styles.interactionDesc}>Stop the replica from talking immediately</p>
+                  <button
+                    onClick={sendInterruptInteraction}
+                    style={{
+                      ...styles.button,
+                      ...styles.buttonDanger,
+                      fontSize: '11px'
+                    }}
+                  >
+                    <AlertCircle size={12} />
+                    Interrupt Replica
+                  </button>
+                </div>
+              )}
+
+              {selectedInteraction === 'context' && (
+                <div>
+                  <h4 style={styles.interactionTitle}>Overwrite Conversational Context</h4>
+                  <p style={styles.interactionDesc}>Change the conversational context</p>
+                  <div style={styles.compactInputRow}>
+                    <textarea
+                      value={contextText}
+                      onChange={(e) => setContextText(e.target.value)}
+                      placeholder="New conversational context..."
+                      style={{
+                        ...styles.compactInput,
+                        minHeight: '60px',
+                        resize: 'vertical' as const
+                      }}
+                    />
+                    <button
+                      onClick={sendContextInteraction}
+                      disabled={!contextText.trim()}
+                      style={{
+                        ...styles.compactButton,
+                        ...(!contextText.trim() ? styles.buttonDisabled : {}),
+                        alignSelf: 'flex-start'
+                      }}
+                    >
+                      Update
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {selectedInteraction === 'sensitivity' && (
+                <div>
+                  <h4 style={styles.interactionTitle}>Sensitivity Interaction (VAD)</h4>
+                  <p style={styles.interactionDesc}>Adjust Voice Activity Detection sensitivity</p>
+                  
+                  <div style={styles.sensitivityGrid}>
+                    <div>
+                      <label style={styles.label}>Pause</label>
+                      <select
+                        value={pauseSensitivity}
+                        onChange={(e) => setPauseSensitivity(e.target.value as 'low' | 'medium' | 'high')}
+                        style={styles.selectInput}
+                      >
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label style={styles.label}>Interrupt</label>
+                      <select
+                        value={interruptSensitivity}
+                        onChange={(e) => setInterruptSensitivity(e.target.value as 'low' | 'medium' | 'high')}
+                        style={styles.selectInput}
+                      >
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={sendSensitivityInteraction}
+                    style={{
+                      ...styles.button,
+                      ...styles.buttonPrimary,
+                      fontSize: '11px',
+                      marginTop: '6px'
+                    }}
+                  >
+                    Update Sensitivity
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Chat Interface */}
-        <div style={styles.section}>
+        <div style={styles.chatSection}>
           <h3 style={styles.sectionTitle}>
-            <MessageCircle size={20} />
+            <MessageCircle size={16} />
             Conversation Log
           </h3>
           
@@ -1013,8 +1065,8 @@ const TavusPOC = () => {
           <div style={styles.messagesContainer}>
             {messages.length === 0 ? (
               <div style={styles.messagesPlaceholder}>
-                <MessageCircle size={32} style={{marginBottom: '8px', opacity: 0.5}} />
-                <p>No messages yet. Start a conversation!</p>
+                <MessageCircle size={24} style={{marginBottom: '6px', opacity: 0.5}} />
+                <p style={{fontSize: '0.75rem'}}>No messages yet. Start a conversation!</p>
               </div>
             ) : (
               messages.map((msg) => (
@@ -1067,40 +1119,9 @@ const TavusPOC = () => {
                 ...(!message.trim() || !isConnected ? styles.buttonDisabled : {})
               }}
             >
-              <Send size={16} />
+              <Send size={12} />
             </button>
           </div>
-        </div>
-      </div>      {/* Instructions */}
-      <div style={styles.instructions}>
-        <h3 style={styles.instructionsTitle}>Getting Started</h3>
-        <ol style={styles.instructionsList}>
-          <li>1. Sign up for a Tavus account and create a replica</li>
-          <li>2. Get your conversation URL from the Tavus dashboard (this should be a Daily.co room URL)</li>
-          <li>3. Enter your conversation URL and ID in the configuration section above</li>
-          <li>4. Click "Connect" to establish the connection</li>
-          <li>5. Start typing messages to interact with your replica</li>
-          <li>6. Use the Interaction Protocol Controls to test advanced features</li>
-        </ol>
-        
-        <div style={{marginTop: '20px'}}>
-          <h4 style={{fontSize: '1rem', fontWeight: '600', color: '#1e40af', marginBottom: '8px'}}>
-            Interaction Protocol Features:
-          </h4>
-          <ul style={{...styles.instructionsList, paddingLeft: '20px'}}>
-            <li><strong>Echo:</strong> Make the replica say exactly what you type</li>
-            <li><strong>Respond:</strong> Send text that the replica will respond to (as if user said it)</li>
-            <li><strong>Interrupt:</strong> Stop the replica from talking immediately</li>
-            <li><strong>Context:</strong> Change the conversational context the replica uses</li>
-            <li><strong>Sensitivity:</strong> Adjust Voice Activity Detection for pauses and interruptions</li>
-          </ul>
-        </div>
-        
-        <div style={{marginTop: '16px', padding: '12px', backgroundColor: '#fef3c7', borderRadius: '6px', border: '1px solid #f59e0b'}}>
-          <p style={{margin: '0', fontSize: '0.875rem', color: '#92400e'}}>
-            <strong>Note:</strong> The video feed will only appear when you successfully connect to a valid Tavus conversation URL. 
-            The Interaction Protocol Controls will appear once connected and allow you to test all the available interaction types.
-          </p>
         </div>
       </div>
     </div>
