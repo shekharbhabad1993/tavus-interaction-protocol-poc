@@ -21,9 +21,10 @@ const TavusPOC = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
   const [error, setError] = useState('');
+  const [showVideo, setShowVideo] = useState(false);
   
   const callRef = useRef<DailyCall | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const videoContainerRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   // Inline styles
@@ -166,7 +167,8 @@ const TavusPOC = () => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      border: '1px solid #e5e7eb'
+      border: '1px solid #e5e7eb',
+      position: 'relative'
     } as React.CSSProperties,
     videoPlaceholder: {
       textAlign: 'center' as const,
@@ -306,6 +308,41 @@ const TavusPOC = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      if (callRef.current) {
+        try {
+          callRef.current.destroy();
+          callRef.current = null;
+        } catch (err) {
+          console.error('Error cleaning up Daily call:', err);
+        }
+      }
+    };
+  }, []);
+
+  // Mount the Daily frame in the video container
+  useEffect(() => {
+    if (showVideo && videoContainerRef.current && callRef.current) {
+      try {
+        // Only append if not already present
+        const existingFrame = videoContainerRef.current.querySelector('iframe');
+        if (!existingFrame) {
+          const frameElement = callRef.current.iframe();
+          if (frameElement) {
+            frameElement.style.width = '100%';
+            frameElement.style.height = '100%';
+            frameElement.style.border = 'none';
+            frameElement.style.borderRadius = '8px';
+            videoContainerRef.current.appendChild(frameElement);
+          }
+        }
+      } catch (err) {
+        console.error('Error mounting video frame:', err);
+      }
+    }
+  }, [showVideo]);
   // Load Daily SDK and initialize connection
   const initializeCall = async () => {
     if (!conversationUrl || !conversationId) {
@@ -313,56 +350,74 @@ const TavusPOC = () => {
       return;
     }
 
+    // Basic URL validation
+    try {
+      new URL(conversationUrl);
+    } catch {
+      setError('Please enter a valid URL (e.g., https://domain.daily.co/room-name)');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
     setConnectionStatus('connecting');
+    addMessage('system', 'Initializing connection...');
 
     try {
       // Dynamically import Daily
       const DailyIframe = (await import('@daily-co/daily-js')).default;
       
-      // Create Daily frame
-      callRef.current = DailyIframe.createFrame({
+      addMessage('system', 'Daily SDK loaded, creating frame...');
+      
+      // Create Daily frame with container specified
+      const frame = DailyIframe.createFrame(videoContainerRef.current!, {
         iframeStyle: {
           width: '100%',
-          height: '400px',
-          border: '1px solid #e2e8f0',
+          height: '100%',
+          border: 'none',
           borderRadius: '8px',
           backgroundColor: '#000'
-        }
+        },
+        showLeaveButton: false,
+        showFullscreenButton: false
       });
-
-      // Append to container
-      if (containerRef.current && callRef.current) {
-        containerRef.current.innerHTML = '';
-        const iframe = callRef.current.iframe();
-        if (iframe) {
-          containerRef.current.appendChild(iframe);
-        }
-      }
-
-      // Set up event listeners
-      callRef.current?.on('joined-meeting', () => {
+      
+      callRef.current = frame;
+      setShowVideo(true);
+      addMessage('system', 'Video frame created, setting up listeners...');      // Set up event listeners
+      frame.on('joined-meeting', () => {
         setIsConnected(true);
         setConnectionStatus('connected');
         setIsLoading(false);
-        addMessage('system', 'Connected to Tavus conversation');
+        addMessage('system', 'Successfully connected to Tavus conversation!');
       });
 
-      callRef.current?.on('left-meeting', () => {
+      frame.on('left-meeting', () => {
         setIsConnected(false);
         setConnectionStatus('disconnected');
+        setShowVideo(false);
         addMessage('system', 'Disconnected from conversation');
       });
 
-      callRef.current?.on('error', (errorEvent: any) => {
-        setError(`Connection error: ${errorEvent.message || 'Unknown error'}`);
+      frame.on('error', (errorEvent: any) => {
+        console.error('Daily error:', errorEvent);
+        setError(`Connection error: ${errorEvent.message || errorEvent.errorMsg || 'Unknown error'}`);
         setConnectionStatus('error');
         setIsLoading(false);
+        setShowVideo(false);
+        addMessage('system', `Error: ${errorEvent.message || 'Connection failed'}`);
+      });
+
+      frame.on('loading', () => {
+        addMessage('system', 'Loading video call...');
+      });
+
+      frame.on('loaded', () => {
+        addMessage('system', 'Video call interface loaded');
       });
 
       // Handle incoming app messages
-      callRef.current?.on('app-message', (event: any) => {
+      frame.on('app-message', (event: any) => {
         console.log('Received app message:', event);
         
         if (event.data) {
@@ -385,21 +440,24 @@ const TavusPOC = () => {
               console.log('Unhandled event type:', messageData.event_type);
           }
         }
-      });
-
-      // Join the conversation
-      await callRef.current.join({
+      });      // Join the conversation
+      addMessage('system', `Attempting to join: ${conversationUrl}`);
+      await frame.join({
         url: conversationUrl,
       });
 
     } catch (err) {
+      console.error('Initialization error:', err);
       if (err instanceof Error) {
         setError(`Failed to initialize: ${err.message}`);
+        addMessage('system', `Failed to initialize: ${err.message}`);
       } else {
         setError('Failed to initialize: Unknown error');
+        addMessage('system', 'Failed to initialize: Unknown error');
       }
       setConnectionStatus('error');
       setIsLoading(false);
+      setShowVideo(false);
     }
   };
 
@@ -412,9 +470,7 @@ const TavusPOC = () => {
         callRef.current = null;
         setIsConnected(false);
         setConnectionStatus('disconnected');
-        if (containerRef.current) {
-          containerRef.current.innerHTML = '';
-        }
+        setShowVideo(false);
       } catch (err) {
         if (err instanceof Error) {
           console.error('Error disconnecting:', err.message);
@@ -474,7 +530,9 @@ const TavusPOC = () => {
   // Toggle mute (placeholder - would need actual implementation)
   const toggleMute = () => {
     setIsMuted(!isMuted);
-    // In a real implementation, you'd call callRef.current.setLocalAudio(!isMuted)
+    if (callRef.current) {
+      callRef.current.setLocalAudio(!isMuted);
+    }
   };
 
   return (
@@ -495,12 +553,11 @@ const TavusPOC = () => {
           <div style={styles.inputField}>
             <label style={styles.label}>
               Conversation URL
-            </label>
-            <input
+            </label>            <input
               type="text"
               value={conversationUrl}
               onChange={(e) => setConversationUrl(e.target.value)}
-              placeholder="https://your-tavus-conversation-url.com"
+              placeholder="https://domain.daily.co/room-name"
               style={{
                 ...styles.input,
                 ...(isConnected ? styles.buttonDisabled : {})
@@ -512,12 +569,11 @@ const TavusPOC = () => {
           <div style={styles.inputField}>
             <label style={styles.label}>
               Conversation ID
-            </label>
-            <input
+            </label>            <input
               type="text"
               value={conversationId}
               onChange={(e) => setConversationId(e.target.value)}
-              placeholder="your-conversation-id"
+              placeholder="tavus-conversation-123"
               style={{
                 ...styles.input,
                 ...(isConnected ? styles.buttonDisabled : {})
@@ -597,10 +653,10 @@ const TavusPOC = () => {
             Video Feed
           </h3>
           <div 
-            ref={containerRef} 
+            ref={videoContainerRef} 
             style={styles.videoContainer}
           >
-            {!isConnected && (
+            {!showVideo && (
               <div style={styles.videoPlaceholder}>
                 <Video size={48} style={{marginBottom: '8px', opacity: 0.5}} />
                 <p>Connect to start video conversation</p>
@@ -694,18 +750,23 @@ const TavusPOC = () => {
             </button>
           </div>
         </div>
-      </div>
-
-      {/* Instructions */}
+      </div>      {/* Instructions */}
       <div style={styles.instructions}>
         <h3 style={styles.instructionsTitle}>Getting Started</h3>
         <ol style={styles.instructionsList}>
           <li>1. Sign up for a Tavus account and create a replica</li>
-          <li>2. Get your conversation URL from the Tavus dashboard</li>
-          <li>3. Enter your conversation URL and ID in the configuration section</li>
+          <li>2. Get your conversation URL from the Tavus dashboard (this should be a Daily.co room URL)</li>
+          <li>3. Enter your conversation URL and ID in the configuration section above</li>
           <li>4. Click "Connect" to establish the connection</li>
           <li>5. Start typing messages to interact with your replica</li>
         </ol>
+        
+        <div style={{marginTop: '16px', padding: '12px', backgroundColor: '#fef3c7', borderRadius: '6px', border: '1px solid #f59e0b'}}>
+          <p style={{margin: '0', fontSize: '0.875rem', color: '#92400e'}}>
+            <strong>Note:</strong> The video feed will only appear when you successfully connect to a valid Tavus conversation URL. 
+            Make sure you have the correct Daily.co room URL from your Tavus dashboard.
+          </p>
+        </div>
       </div>
     </div>
   );
