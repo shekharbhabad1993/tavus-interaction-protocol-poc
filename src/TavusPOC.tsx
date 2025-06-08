@@ -711,9 +711,20 @@ const TavusPOC = () => {
     if (callRef.current) {
       callRef.current.setLocalAudio(!isMuted);
     }
-  };
-  return (
-    <div style={styles.container}>      {/* Top Grid - Left Column (Config + Interactions) and Video */}
+  };  return (
+    <div style={styles.container}>
+      {/* Main Heading */}
+      <h1 style={{
+        fontSize: '1.5rem',
+        fontWeight: 'bold',
+        color: '#1f2937',
+        marginBottom: '20px',
+        textAlign: 'center' as const
+      }}>
+        Tavus Interaction Protocol POC
+      </h1>
+      
+      {/* Top Grid - Left Column (Config + Interactions) and Video */}
       <div style={styles.topGrid}>
         {/* Left Column - Configuration and Interaction Controls */}
         <div style={styles.leftColumn}>
